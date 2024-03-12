@@ -85,7 +85,7 @@ import Timer from "./timer"
  *
  * Defaults to 20s (double the server long poll timer).
  *
- * @param {(Object|function)} [opts.params] - The optional params to pass when connecting
+ * @param {(Object|function|Promise<Object>)} [opts.params] - The optional params to pass when connecting
  * @param {string} [opts.binaryType] - The binary type to use for binary WebSocket frames.
  *
  * Defaults to "arraybuffer"
@@ -211,11 +211,11 @@ export default class Socket {
   /**
    * The fully qualified socket url
    *
-   * @returns {string}
+   * @returns {Promise<string>}
    */
-  endPointURL(){
+  async endPointURL(){
     let uri = Ajax.appendParams(
-      Ajax.appendParams(this.endPoint, this.params()), {vsn: this.vsn})
+      Ajax.appendParams(this.endPoint, await this.params()), {vsn: this.vsn})
     if(uri.charAt(0) !== "/"){ return uri }
     if(uri.charAt(1) === "/"){ return `${this.protocol()}:${uri}` }
 
@@ -342,10 +342,10 @@ export default class Socket {
    * @private
    */
 
-  transportConnect(){
+  async transportConnect(){
     this.connectClock++
     this.closeWasClean = false
-    this.conn = new this.transport(this.endPointURL())
+    this.conn = new this.transport(await this.endPointURL())
     this.conn.binaryType = this.binaryType
     this.conn.timeout = this.longpollerTimeout
     this.conn.onopen = () => this.onConnOpen()
@@ -376,7 +376,7 @@ export default class Socket {
 
     errorRef = this.onError(reason => {
       this.log("transport", "error", reason)
-      if(primaryTransport && !established) {
+      if(primaryTransport && !established){
         clearTimeout(this.fallbackTimer)
         fallback(reason)
       }
@@ -405,8 +405,8 @@ export default class Socket {
     clearTimeout(this.heartbeatTimeoutTimer)
   }
 
-  onConnOpen(){
-    if(this.hasLogger()) this.log("transport", `${this.transport.name} connected to ${this.endPointURL()}`)
+  async onConnOpen(){
+    if(this.hasLogger()) this.log("transport", `${this.transport.name} connected to ${await this.endPointURL()}`)
     this.closeWasClean = false
     this.establishedConnections++
     this.flushSendBuffer()

@@ -1124,11 +1124,11 @@ var Socket = class {
   /**
    * The fully qualified socket url
    *
-   * @returns {string}
+   * @returns {Promise<string>}
    */
-  endPointURL() {
+  async endPointURL() {
     let uri = Ajax.appendParams(
-      Ajax.appendParams(this.endPoint, this.params()),
+      Ajax.appendParams(this.endPoint, await this.params()),
       { vsn: this.vsn }
     );
     if (uri.charAt(0) !== "/") {
@@ -1257,10 +1257,10 @@ var Socket = class {
   /**
    * @private
    */
-  transportConnect() {
+  async transportConnect() {
     this.connectClock++;
     this.closeWasClean = false;
-    this.conn = new this.transport(this.endPointURL());
+    this.conn = new this.transport(await this.endPointURL());
     this.conn.binaryType = this.binaryType;
     this.conn.timeout = this.longpollerTimeout;
     this.conn.onopen = () => this.onConnOpen();
@@ -1319,9 +1319,9 @@ var Socket = class {
     clearTimeout(this.heartbeatTimer);
     clearTimeout(this.heartbeatTimeoutTimer);
   }
-  onConnOpen() {
+  async onConnOpen() {
     if (this.hasLogger())
-      this.log("transport", `${this.transport.name} connected to ${this.endPointURL()}`);
+      this.log("transport", `${this.transport.name} connected to ${await this.endPointURL()}`);
     this.closeWasClean = false;
     this.establishedConnections++;
     this.flushSendBuffer();

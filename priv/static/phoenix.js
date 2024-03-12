@@ -16,6 +16,26 @@ var Phoenix = (() => {
     return to;
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+  var __async = (__this, __arguments, generator) => {
+    return new Promise((resolve, reject) => {
+      var fulfilled = (value) => {
+        try {
+          step(generator.next(value));
+        } catch (e) {
+          reject(e);
+        }
+      };
+      var rejected = (value) => {
+        try {
+          step(generator.throw(value));
+        } catch (e) {
+          reject(e);
+        }
+      };
+      var step = (x) => x.done ? resolve(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
+      step((generator = generator.apply(__this, __arguments)).next());
+    });
+  };
 
   // js/phoenix/index.js
   var phoenix_exports = {};
@@ -1124,20 +1144,22 @@ var Phoenix = (() => {
     /**
      * The fully qualified socket url
      *
-     * @returns {string}
+     * @returns {Promise<string>}
      */
     endPointURL() {
-      let uri = Ajax.appendParams(
-        Ajax.appendParams(this.endPoint, this.params()),
-        { vsn: this.vsn }
-      );
-      if (uri.charAt(0) !== "/") {
-        return uri;
-      }
-      if (uri.charAt(1) === "/") {
-        return `${this.protocol()}:${uri}`;
-      }
-      return `${this.protocol()}://${location.host}${uri}`;
+      return __async(this, null, function* () {
+        let uri = Ajax.appendParams(
+          Ajax.appendParams(this.endPoint, yield this.params()),
+          { vsn: this.vsn }
+        );
+        if (uri.charAt(0) !== "/") {
+          return uri;
+        }
+        if (uri.charAt(1) === "/") {
+          return `${this.protocol()}:${uri}`;
+        }
+        return `${this.protocol()}://${location.host}${uri}`;
+      });
     }
     /**
      * Disconnects the socket
@@ -1258,15 +1280,17 @@ var Phoenix = (() => {
      * @private
      */
     transportConnect() {
-      this.connectClock++;
-      this.closeWasClean = false;
-      this.conn = new this.transport(this.endPointURL());
-      this.conn.binaryType = this.binaryType;
-      this.conn.timeout = this.longpollerTimeout;
-      this.conn.onopen = () => this.onConnOpen();
-      this.conn.onerror = (error) => this.onConnError(error);
-      this.conn.onmessage = (event) => this.onConnMessage(event);
-      this.conn.onclose = (event) => this.onConnClose(event);
+      return __async(this, null, function* () {
+        this.connectClock++;
+        this.closeWasClean = false;
+        this.conn = new this.transport(yield this.endPointURL());
+        this.conn.binaryType = this.binaryType;
+        this.conn.timeout = this.longpollerTimeout;
+        this.conn.onopen = () => this.onConnOpen();
+        this.conn.onerror = (error) => this.onConnError(error);
+        this.conn.onmessage = (event) => this.onConnMessage(event);
+        this.conn.onclose = (event) => this.onConnClose(event);
+      });
     }
     getSession(key) {
       return this.sessionStore && this.sessionStore.getItem(key);
@@ -1320,14 +1344,16 @@ var Phoenix = (() => {
       clearTimeout(this.heartbeatTimeoutTimer);
     }
     onConnOpen() {
-      if (this.hasLogger())
-        this.log("transport", `${this.transport.name} connected to ${this.endPointURL()}`);
-      this.closeWasClean = false;
-      this.establishedConnections++;
-      this.flushSendBuffer();
-      this.reconnectTimer.reset();
-      this.resetHeartbeat();
-      this.stateChangeCallbacks.open.forEach(([, callback]) => callback());
+      return __async(this, null, function* () {
+        if (this.hasLogger())
+          this.log("transport", `${this.transport.name} connected to ${yield this.endPointURL()}`);
+        this.closeWasClean = false;
+        this.establishedConnections++;
+        this.flushSendBuffer();
+        this.reconnectTimer.reset();
+        this.resetHeartbeat();
+        this.stateChangeCallbacks.open.forEach(([, callback]) => callback());
+      });
     }
     /**
      * @private
