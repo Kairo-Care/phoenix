@@ -173,6 +173,7 @@ export default class Socket {
     this.heartbeatTimeoutTimer = null
     this.heartbeatTimer = null
     this.pendingHeartbeatRef = null
+    this.initializingConn = false
     this.reconnectTimer = new Timer(() => {
       this.teardown(() => this.connect())
     }, this.reconnectAfterMs)
@@ -197,6 +198,7 @@ export default class Socket {
     if(this.conn){
       this.conn.close()
       this.conn = null
+      this.initializingConn = false
     }
     this.transport = newTransport
   }
@@ -251,10 +253,11 @@ export default class Socket {
       console && console.log("passing params to connect is deprecated. Instead pass :params to the Socket constructor")
       this.params = closure(params)
     }
-    if(this.conn){ return }
+    if(this.conn || this.initializingConn){ return }
     if(this.longPollFallbackMs && this.transport !== LongPoll){
       this.connectWithFallback(LongPoll, this.longPollFallbackMs)
     } else {
+      this.initializingConn = true
       this.transportConnect()
     }
   }
@@ -352,6 +355,7 @@ export default class Socket {
     this.conn.onerror = error => this.onConnError(error)
     this.conn.onmessage = event => this.onConnMessage(event)
     this.conn.onclose = event => this.onConnClose(event)
+    this.initializingConn = false
   }
 
   getSession(key){ return this.sessionStore && this.sessionStore.getItem(key) }

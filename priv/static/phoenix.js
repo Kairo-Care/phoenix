@@ -1106,6 +1106,7 @@ var Phoenix = (() => {
       this.heartbeatTimeoutTimer = null;
       this.heartbeatTimer = null;
       this.pendingHeartbeatRef = null;
+      this.initializingConn = false;
       this.reconnectTimer = new Timer(() => {
         this.teardown(() => this.connect());
       }, this.reconnectAfterMs);
@@ -1130,6 +1131,7 @@ var Phoenix = (() => {
       if (this.conn) {
         this.conn.close();
         this.conn = null;
+        this.initializingConn = false;
       }
       this.transport = newTransport;
     }
@@ -1189,12 +1191,13 @@ var Phoenix = (() => {
         console && console.log("passing params to connect is deprecated. Instead pass :params to the Socket constructor");
         this.params = closure(params);
       }
-      if (this.conn) {
+      if (this.conn || this.initializingConn) {
         return;
       }
       if (this.longPollFallbackMs && this.transport !== LongPoll) {
         this.connectWithFallback(LongPoll, this.longPollFallbackMs);
       } else {
+        this.initializingConn = true;
         this.transportConnect();
       }
     }
@@ -1290,6 +1293,7 @@ var Phoenix = (() => {
         this.conn.onerror = (error) => this.onConnError(error);
         this.conn.onmessage = (event) => this.onConnMessage(event);
         this.conn.onclose = (event) => this.onConnClose(event);
+        this.initializingConn = false;
       });
     }
     getSession(key) {
